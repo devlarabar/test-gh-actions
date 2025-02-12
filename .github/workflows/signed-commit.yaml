@@ -20,23 +20,55 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Import GPG key
-        id: import-gpg
-        uses: crazy-max/ghaction-import-gpg@v6
+      - name: Generate JWT for GitHub App authentication
+        id: generate-jwt
+        run: |
+          # Write the private key from GitHub Secrets to a file
+          echo "${{ secrets.GH_APP_PRIVATE_KEY }}" > private-key.pem
+          chmod 600 private-key.pem
+
+          # Get current timestamp
+          NOW=$(date +%s)
+          EXPIRY=$((NOW + 600)) # 10 minutes
+
+          # Generate JWT using OpenSSL and Bash (no Node.js required)
+          JWT=$(jq -n \
+            --arg iat "$NOW" \
+            --arg exp "$EXPIRY" \
+            --arg iss "${{ secrets.GH_APP_ID }}" \
+            '{iat: ($iat | tonumber), exp: ($exp | tonumber), iss: ($iss | tonumber)}' | \
+            openssl dgst -sha256 -sign private-key.pem | \
+            base64 | tr -d '\n')
+
+          echo "JWT=$JWT" >> $GITHUB_ENV
+
+      - name: Get Installation Access Token
+        id: get-access-token
+        run: |
+          INSTALLATION_ID="${{ secrets.GH_APP_INSTALLATION_ID }}"
+          
+          ACCESS_TOKEN=$(curl -X POST "https://api.github.com/app/installations/$INSTALLATION_ID/access_tokens" \
+            -H "Authorization: Bearer $JWT" \
+            -H "Accept: application/vnd.github.v3+json" | jq -r .token)
+          
+          echo "::set-output name=access_token::$ACCESS_TOKEN"
+
+      - name: Commit changes using GitHub App
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          gpg_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-          # passphrase: ${{ secrets.GH_APP_PASSPHRASE }}
-          git_user_signingkey: true
-          git_commit_gpgsign: true
+          commit_message: "Automated commit by GitHub App"
+          commit_user_name: "devlarabar"
+          commit_user_email: "lsalsham@hotmail.com"
+          access_token: ${{ steps.get-access-token.outputs.access_token }}
 
       - name: Write to README.md
         run: |
           echo '${{ github.event.release.tag_name }}' >> README.md
 
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          file_pattern: README.md
-          commit_message: Append version ${{ github.event.release.tag_name }} to README.md
-          commit_user_name: ${{ steps.import-gpg.outputs.name }}
-          commit_user_email: ${{ steps.import-gpg.outputs.email }}
+      # - name: Commit changes
+      #   uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     file_pattern: README.md
+      #     commit_message: Append version ${{ github.event.release.tag_name }} to README.md
+      #     commit_user_name: ${{ steps.import-gpg.outputs.name }}
+      #     commit_user_email: ${{ steps.import-gpg.outputs.email }}
