@@ -20,6 +20,21 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Set up the GitHub App authentication
+      - name: Generate GitHub App JWT Token
+        id: generate-jwt
+        uses: peter-evans/github-app-token@v2
+        with:
+          app-id: ${{ secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      
+      # Set up the GitHub App token in the Git configuration
+      - name: Set up GitHub App commit signer
+        run: |
+          git config --global user.name "devlarabar"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global commit.gpgSign true
+
       - name: Write to README.md
         run: |
           echo '${{ github.event.release.tag_name }}' >> README.md
