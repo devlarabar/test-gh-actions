@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Get token for GitHub App
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.GH_APP_ID }}
+          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+    
       - name: Checkout the repo
         uses: actions/checkout@v4
         with:
@@ -20,42 +27,16 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Get token for GitHub App
-        id: get_workflow_token
-        uses: peter-murray/workflow-application-token-action@v3
-        with:
-          application_id: ${{ secrets.GH_APP_ID }}
-          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
-      - uses: actions/checkout@v4
-        with:
-          token: ${{ steps.get_workflow_token.outputs.token }} 
-
-      # - name: Set up Git configuration
-      #   run: |
-      #     git config --global user.name "devlarabar[bot]"
-      #     git config --global user.email 198984901+devlarabar[bot]@users.noreply.github.com
-
       - name: Write to README.md
         run: |
           echo '${{ github.event.release.tag_name }}' >> README.md
-      
+    
       - name: Commit changes using GitHub App
+        with:
+          token: ${{ steps.get_workflow_token.outputs.token }} 
         run: |-
           git config user.name 'devlarabar[bot]'
           git config user.email '198984901+devlarabar[bot]@users.noreply.github.com'
           git add .
           git commit -m "Automated commit by GitHub App"
           git push
-
-      # - name: Commit changes using GitHub App
-      #   uses: stefanzweifel/git-auto-commit-action@v5
-      #   with:
-      #     commit_message: "Automated commit by GitHub App"
-
-      # - name: Commit changes
-      #   uses: stefanzweifel/git-auto-commit-action@v5
-      #   with:
-      #     file_pattern: README.md
-      #     commit_message: Append version ${{ github.event.release.tag_name }} to README.md
-      #     commit_user_name: ${{ steps.import-gpg.outputs.name }}
-      #     commit_user_email: ${{ steps.import-gpg.outputs.email }}
