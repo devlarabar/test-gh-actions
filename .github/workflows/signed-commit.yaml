@@ -20,19 +20,37 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Set up Git configuration
-        run: |
-          git config --global user.name "devlarabar[bot]"
-          git config --global user.email 198984901+devlarabar[bot]@users.noreply.github.com
+      - name: Get token for GitHub App
+        id: get_workflow_token
+        uses: peter-murray/workflow-application-token-action@v3
+        with:
+          application_id: ${{ secrets.GH_APP_ID }}
+          application_private_key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.get_workflow_token.outputs.token }} 
+
+      # - name: Set up Git configuration
+      #   run: |
+      #     git config --global user.name "devlarabar[bot]"
+      #     git config --global user.email 198984901+devlarabar[bot]@users.noreply.github.com
 
       - name: Write to README.md
         run: |
           echo '${{ github.event.release.tag_name }}' >> README.md
-
+      
       - name: Commit changes using GitHub App
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "Automated commit by GitHub App"
+        run: |-
+          git config user.name 'devlarabar[bot]'
+          git config user.email '198984901+devlarabar[bot]@users.noreply.github.com'
+          git add .
+          git commit -m "Automated commit by GitHub App"
+          git push
+
+      # - name: Commit changes using GitHub App
+      #   uses: stefanzweifel/git-auto-commit-action@v5
+      #   with:
+      #     commit_message: "Automated commit by GitHub App"
 
       # - name: Commit changes
       #   uses: stefanzweifel/git-auto-commit-action@v5
