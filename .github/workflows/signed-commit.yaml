@@ -21,6 +21,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: main
+          token: ${{ steps.get_workflow_token.outputs.token }} 
 
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
@@ -32,8 +33,6 @@ jobs:
           echo '${{ github.event.release.tag_name }}' >> README.md
     
       - name: Commit changes using GitHub App
-        with:
-          token: ${{ steps.get_workflow_token.outputs.token }} 
         run: |-
           git config user.name 'devlarabar[bot]'
           git config user.email '198984901+devlarabar[bot]@users.noreply.github.com'
