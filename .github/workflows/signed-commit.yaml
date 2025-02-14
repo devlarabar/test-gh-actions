@@ -39,7 +39,7 @@ jobs:
       - name: Commit changes using GitHub App
         run: |-
           git config user.name 'devlarabar[bot]'
-          git config user.email '198984901+devlarabar[bot]@users.noreply.github.com'
+          git config user.email '1143328+devlarabarbot[bot]@users.noreply.github.com'
           git add .
-          git commit -m "Automated commit by GitHub App"
+          git commit -m "Bump version to ${{ github.event.release.tag_name }}"
           git push
